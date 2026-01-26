@@ -1,0 +1,68 @@
+@import "tailwindcss";
+@variant dark (&:where(.dark, .dark *));
+
+/* Custom Print Styles */
+@media print {
+
+    /* Hide UI elements */
+    header,
+    aside,
+    form,
+    /* Message input area */
+    .fixed,
+    /* Floating themes/config */
+    button,
+    /* Hide all buttons */
+    .no-print {
+        display: none !important;
+    }
+
+    /* Reset layout for printing */
+    body,
+    #root,
+    .min-h-screen,
+    main {
+        background: white !important;
+        color: black !important;
+        height: auto !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        display: block !important;
+    }
+
+    /* Chat container specific */
+    main {
+        max-width: 100% !important;
+        padding: 20px !important;
+    }
+
+    /* Ensure text colors are dark for readability */
+    .text-white,
+    .text-slate-100,
+    .text-blue-100 {
+        color: black !important;
+    }
+
+    /* Formatting for message bubbles */
+    .bg-blue-600,
+    .bg-slate-800 {
+        background: none !important;
+        border: 1px solid #ccc !important;
+        color: black !important;
+    }
+}
+
+/* Utility to hide scrollbar but allow scrolling */
+.no-scrollbar {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+    /* Chrome, Safari and Opera */
+}
