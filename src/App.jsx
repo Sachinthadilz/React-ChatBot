@@ -82,6 +82,13 @@ function MainApp() {
     }
   }, [isAuthenticated, user]);
 
+  // Auto-close auth prompt when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      setShowAuthPrompt(false);
+    }
+  }, [isAuthenticated]);
+
   // Save chat to database when messages change (only if authenticated)
   useEffect(() => {
     if (!isAuthenticated || !user || !activeChatId || loading) return;
@@ -354,6 +361,33 @@ function MainApp() {
           </div>
         </main>
       </div>
+
+      {/* Auth Modal */}
+      {showAuthPrompt && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+            onClick={() => setShowAuthPrompt(false)}
+          />
+
+          <div className="relative w-full max-w-md z-10">
+            <button
+              onClick={() => setShowAuthPrompt(false)}
+              className="absolute top-4 right-4 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 z-10"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            {authMode === 'login' ? (
+              <Login onToggleMode={() => setAuthMode('signup')} />
+            ) : (
+              <Signup onToggleMode={() => setAuthMode('login')} />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

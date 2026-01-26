@@ -55,39 +55,39 @@ export function Signup({ onToggleMode }) {
                 </div>
 
                 {/* Signup Form */}
-                <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-8">
+                <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-6 sm:p-8">
                     {success ? (
-                        <div className="text-center py-8">
-                            <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="text-center py-6 sm:py-8">
+                            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                                <svg className="w-6 h-6 sm:w-8 sm:h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                 </svg>
                             </div>
-                            <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                            <h3 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
                                 Account Created!
                             </h3>
-                            <p className="text-slate-600 dark:text-slate-400 mb-6">
+                            <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mb-5 sm:mb-6">
                                 Check your email to verify your account, then sign in.
                             </p>
                             <button
                                 onClick={onToggleMode}
-                                className="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
+                                className="px-5 py-2 sm:px-6 sm:py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all text-sm sm:text-base"
                             >
                                 Go to Sign In
                             </button>
                         </div>
                     ) : (
-                        <form onSubmit={handleSubmit} className="space-y-6">
+                        <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
                             {/* Error Message */}
                             {error && (
-                                <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                                <div className="p-3 sm:p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
                                     <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
                                 </div>
                             )}
 
                             {/* Email Input */}
                             <div>
-                                <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 sm:mb-2">
                                     Email
                                 </label>
                                 <input
@@ -96,14 +96,14 @@ export function Signup({ onToggleMode }) {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
-                                    className="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-slate-900 dark:text-slate-100 transition-all"
+                                    className="w-full px-4 py-2.5 sm:py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-slate-900 dark:text-slate-100 transition-all text-sm sm:text-base"
                                     placeholder="you@example.com"
                                 />
                             </div>
 
                             {/* Password Input */}
                             <div>
-                                <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 sm:mb-2">
                                     Password
                                 </label>
                                 <input
@@ -112,14 +112,14 @@ export function Signup({ onToggleMode }) {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
-                                    className="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-slate-900 dark:text-slate-100 transition-all"
+                                    className="w-full px-4 py-2.5 sm:py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-slate-900 dark:text-slate-100 transition-all text-sm sm:text-base"
                                     placeholder="••••••••"
                                 />
                             </div>
 
                             {/* Confirm Password Input */}
                             <div>
-                                <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 sm:mb-2">
                                     Confirm Password
                                 </label>
                                 <input
@@ -128,7 +128,7 @@ export function Signup({ onToggleMode }) {
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
                                     required
-                                    className="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-slate-900 dark:text-slate-100 transition-all"
+                                    className="w-full px-4 py-2.5 sm:py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-slate-900 dark:text-slate-100 transition-all text-sm sm:text-base"
                                     placeholder="••••••••"
                                 />
                             </div>
@@ -137,7 +137,7 @@ export function Signup({ onToggleMode }) {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full px-4 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                             >
                                 {loading ? 'Creating account...' : 'Sign Up'}
                             </button>
@@ -145,7 +145,7 @@ export function Signup({ onToggleMode }) {
                     )}
 
                     {!success && (
-                        <div className="mt-6 text-center">
+                        <div className="mt-5 sm:mt-6 text-center">
                             <p className="text-sm text-slate-600 dark:text-slate-400">
                                 Already have an account?{' '}
                                 <button
