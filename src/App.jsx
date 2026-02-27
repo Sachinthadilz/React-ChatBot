@@ -3,6 +3,9 @@ import { v4 as uuidv4 } from "uuid";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { Login } from "./components/Auth/Login";
 import { Signup } from "./components/Auth/Signup";
+import { LandingPage } from "./components/LandingPage/LandingPage";
+import { AppHeader, PageHeader } from "./components/Layout/Header";
+import { Footer } from "./components/Layout/Footer";
 import { Sidebar } from "./components/Sidebar/Sidebar";
 import { Chat } from "./components/Chat/Chat";
 import { Assistant } from "./components/Assistant/Assistant";
@@ -239,68 +242,15 @@ function MainApp() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900 transition-colors duration-200">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800 no-print">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <img
-                className="w-8 h-8 object-contain"
-                src="/chat-bot.png"
-                alt="AI Chatbot Logo"
-              />
-              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
-                AI Chatbot
-              </h2>
-            </div>
-
-            {/* User Info or Login Button */}
-            <div className="flex items-center gap-4">
-              {/* Export Menu */}
-              <div className="relative">
-                <button
-                  onClick={handleExportPDF}
-                  className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                  title="Print / Save as PDF"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                  </svg>
-                </button>
-              </div>
-
-              {isAuthenticated ? (
-                <>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                      {user?.email}
-                    </span>
-                    {saving && (
-                      <span className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-full">
-                        <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                        Saving...
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                  >
-                    Logout
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={handleSaveChatsPrompt}
-                  className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-sm"
-                >
-                  Save Chats
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* Shared App Header */}
+      <AppHeader
+        user={user}
+        isAuthenticated={isAuthenticated}
+        saving={saving}
+        onSaveChats={handleSaveChatsPrompt}
+        onLogout={handleLogout}
+        onExportPDF={handleExportPDF}
+      />
 
       {/* Guest Mode Banner */}
       {!isAuthenticated && (
@@ -393,7 +343,14 @@ function MainApp() {
 }
 
 function AppContent() {
-  const { loading } = useAuth();
+  const { loading, isAuthenticated } = useAuth();
+  const [showLanding, setShowLanding] = useState(true);
+  const [landingAuthMode, setLandingAuthMode] = useState(null); // 'login' | 'signup' | null
+
+  // Once user authenticates, skip the landing page
+  useEffect(() => {
+    if (isAuthenticated) setShowLanding(false);
+  }, [isAuthenticated]);
 
   if (loading) {
     return (
@@ -402,6 +359,39 @@ function AppContent() {
           <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-slate-600 dark:text-slate-400">Loading...</p>
         </div>
+      </div>
+    );
+  }
+
+  // Show landing page for unauthenticated users who haven't dismissed it yet
+  if (!isAuthenticated && showLanding && !landingAuthMode) {
+    return (
+      <LandingPage
+        onGetStarted={() => setShowLanding(false)}
+        onLogin={() => setLandingAuthMode('login')}
+      />
+    );
+  }
+
+  // If user clicked Sign In / Sign Up from the landing page, show a full-page auth form
+  if (!isAuthenticated && landingAuthMode) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 transition-colors duration-300">
+        <PageHeader
+          variant="auth"
+          onGetStarted={() => { setLandingAuthMode(null); setShowLanding(false); }}
+          onGoHome={() => { setLandingAuthMode(null); setShowLanding(true); }}
+        />
+        <div className="flex-1 flex items-center justify-center px-4 py-12">
+          <div className="w-full max-w-md">
+            {landingAuthMode === 'login' ? (
+              <Login onToggleMode={() => setLandingAuthMode('signup')} />
+            ) : (
+              <Signup onToggleMode={() => setLandingAuthMode('login')} />
+            )}
+          </div>
+        </div>
+        <Footer compact />
       </div>
     );
   }
