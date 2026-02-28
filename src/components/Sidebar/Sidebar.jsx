@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { deleteChat } from "../../services/chatService";
+import { DeleteConfirmationModal } from "../Modals/DeleteConfirmationModal";
 
 export function Sidebar({
   chats,
@@ -14,73 +15,66 @@ export function Sidebar({
   const [editTitle, setEditTitle] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [deletingChatId, setDeletingChatId] = useState(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
-  function handleSidebarToggle() {
-    setIsOpen(!isOpen);
-  }
+  const handleSidebarToggle = useCallback(() => setIsOpen((o) => !o), []);
 
-  function handleEscapeClick(event) {
-    if (isOpen && event.key === "Escape") {
-      setIsOpen(false);
-    }
-  }
+  const handleEscapeClick = useCallback(
+    (event) => { if (isOpen && event.key === "Escape") setIsOpen(false); },
+    [isOpen]
+  );
 
-  function handleChatClick(chatId) {
-    if (editingChatId === chatId) return; // Don't switch if editing
-    onActiveChatIdChange(chatId);
+  const handleChatClick = useCallback(
+    (chatId) => {
+      if (editingChatId === chatId) return;
+      onActiveChatIdChange(chatId);
+      if (isOpen) setIsOpen(false);
+    },
+    [editingChatId, isOpen, onActiveChatIdChange]
+  );
 
-    if (isOpen) {
-      setIsOpen(false);
-    }
-  }
-
-  function handleStartEditing(chat, event) {
+  const handleStartEditing = useCallback((chat, event) => {
     event.stopPropagation();
     setEditingChatId(chat.id);
     setEditTitle(chat.title || "New Chat");
-  }
+  }, []);
 
-  function handleSaveTitle(chatId) {
-    if (!editTitle.trim()) {
+  const handleSaveTitle = useCallback(
+    (chatId) => {
+      if (editTitle.trim()) onChatTitleUpdate(chatId, editTitle.trim());
       setEditingChatId(null);
-      return;
-    }
+    },
+    [editTitle, onChatTitleUpdate]
+  );
 
-    onChatTitleUpdate(chatId, editTitle.trim());
-    setEditingChatId(null);
-  }
-
-  function handleCancelEditing() {
+  const handleCancelEditing = useCallback(() => {
     setEditingChatId(null);
     setEditTitle("");
-  }
+  }, []);
 
-  async function handleDeleteChat(chatId, event) {
-    event.stopPropagation();
+  // Ask for confirmation via modal instead of browser confirm()
+  const handleDeleteRequest = useCallback(
+    (chatId, event) => {
+      event.stopPropagation();
+      if (editingChatId === chatId) { handleCancelEditing(); return; }
+      setPendingDeleteId(chatId);
+    },
+    [editingChatId, handleCancelEditing]
+  );
 
-    if (editingChatId === chatId) {
-      handleCancelEditing();
-      return;
-    }
-
-    if (!confirm('Are you sure you want to delete this chat?')) {
-      return;
-    }
-
-    setDeletingChatId(chatId);
-
+  const handleConfirmDelete = useCallback(async () => {
+    if (!pendingDeleteId) return;
+    setDeletingChatId(pendingDeleteId);
     try {
-      await deleteChat(chatId);
-      if (onChatDelete) {
-        onChatDelete(chatId);
-      }
-    } catch (error) {
-      console.error('Error deleting chat:', error);
-      alert('Failed to delete chat');
+      await deleteChat(pendingDeleteId);
+      if (onChatDelete) onChatDelete(pendingDeleteId);
+    } catch {
+      // deletion failed silently — item stays in list
     } finally {
       setDeletingChatId(null);
+      setPendingDeleteId(null);
     }
-  }
+  }, [pendingDeleteId, onChatDelete]);
 
   return (
     <>
@@ -94,7 +88,7 @@ export function Sidebar({
         <MenuIcon />
       </button>
 
-      {/* Sidebar */}
+      {/* Sidebar Panel */}
       <div
         className={`fixed top-0 left-0 h-full w-80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-r border-slate-200 dark:border-slate-700 shadow-2xl transform transition-transform duration-300 ease-in-out z-40 ${isOpen ? "translate-x-0" : "-translate-x-full"
           }`}
@@ -103,10 +97,7 @@ export function Sidebar({
           {/* New Chat Button */}
           <button
             className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-blue-600 disabled:hover:to-indigo-600"
-            onClick={() => {
-              onNewChatCreate();
-              setIsOpen(false);
-            }}
+            onClick={() => { onNewChatCreate(); setIsOpen(false); }}
             disabled={activeChatMessages.length === 0}
           >
             + New Chat
@@ -120,8 +111,8 @@ export function Sidebar({
                 <div
                   key={chat.id}
                   className={`group relative px-4 py-3 rounded-lg cursor-pointer transition-all ${chat.id === activeChatId
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
-                    : "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-slate-100"
+                      ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
+                      : "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-slate-100"
                     }`}
                   onClick={() => handleChatClick(chat.id)}
                 >
@@ -142,17 +133,20 @@ export function Sidebar({
                       />
                     ) : (
                       <>
-                        <p className="text-sm font-medium truncate pr-16 select-none" onDoubleClick={(e) => handleStartEditing(chat, e)}>
+                        <p
+                          className="text-sm font-medium truncate pr-16 select-none"
+                          onDoubleClick={(e) => handleStartEditing(chat, e)}
+                        >
                           {chat.title || "New Chat"}
                         </p>
 
                         <div className="absolute right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-inherit">
-                          {/* Rename Button */}
+                          {/* Rename */}
                           <button
                             onClick={(e) => handleStartEditing(chat, e)}
                             className={`p-1.5 rounded-md transition-all ${chat.id === activeChatId
-                              ? "text-white/80 hover:text-white hover:bg-white/20"
-                              : "text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                ? "text-white/80 hover:text-white hover:bg-white/20"
+                                : "text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                               }`}
                             title="Rename chat"
                           >
@@ -161,19 +155,19 @@ export function Sidebar({
                             </svg>
                           </button>
 
-                          {/* Delete Button */}
+                          {/* Delete */}
                           {onChatDelete && (
                             <button
-                              onClick={(e) => handleDeleteChat(chat.id, e)}
+                              onClick={(e) => handleDeleteRequest(chat.id, e)}
                               disabled={deletingChatId === chat.id}
                               className={`p-1.5 rounded-md transition-all ${chat.id === activeChatId
-                                ? "text-white/80 hover:text-white hover:bg-white/20"
-                                : "text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                  ? "text-white/80 hover:text-white hover:bg-white/20"
+                                  : "text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                                 }`}
                               title="Delete chat"
                             >
                               {deletingChatId === chat.id ? (
-                                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                               ) : (
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -185,10 +179,7 @@ export function Sidebar({
                       </>
                     )}
                   </div>
-
-                  <p className="text-xs opacity-75 mt-1">
-                    {chat.messages.length} messages
-                  </p>
+                  <p className="text-xs opacity-75 mt-1">{chat.messages.length} messages</p>
                 </div>
               ))}
           </div>
@@ -202,24 +193,23 @@ export function Sidebar({
           onClick={() => setIsOpen(false)}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={pendingDeleteId !== null}
+        onClose={() => setPendingDeleteId(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Chat"
+        message="Are you sure you want to delete this chat? This action cannot be undone."
+      />
     </>
   );
 }
 
 function MenuIcon() {
   return (
-    <svg
-      className="w-6 h-6 text-slate-700 dark:text-slate-300"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M4 6h16M4 12h16M4 18h16"
-      />
+    <svg className="w-6 h-6 text-slate-700 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
     </svg>
   );
 }

@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
-import { v4 as uuidv4 } from "uuid";
+import { useCallback, useEffect, useState } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { Login } from "./components/Auth/Login";
 import { Signup } from "./components/Auth/Signup";
@@ -10,239 +9,75 @@ import { Sidebar } from "./components/Sidebar/Sidebar";
 import { Chat } from "./components/Chat/Chat";
 import { Assistant } from "./components/Assistant/Assistant";
 import { Theme } from "./components/Theme/Theme";
-import { loadUserChats, saveChat, updateChat, updateChatTitle } from "./services/chatService";
-
+import { Spinner } from "./components/Spinner/Spinner";
+import { useChat } from "./hooks/useChat";
 import html2pdf from "html2pdf.js";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// MainApp — authenticated / guest chat shell
+// ─────────────────────────────────────────────────────────────────────────────
 function MainApp() {
   const { user, signOut, isAuthenticated } = useAuth();
   const [assistant, setAssistant] = useState();
-  const [chats, setChats] = useState([]);
-  const [activeChatId, setActiveChatId] = useState();
-  const [loading, setLoading] = useState(false);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
-  const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
-  const [saving, setSaving] = useState(false);
+  const [authMode, setAuthMode] = useState("login");
 
-  function handleExportPDF() {
-    const element = document.getElementById('chat-export-container');
-    if (!element) return;
+  const {
+    chats,
+    activeChatId,
+    loading,
+    saving,
+    handleNewChatCreate,
+    handleChatMessagesUpdate,
+    handleActiveChatIdChange,
+    handleChatTitleUpdate,
+    handleChatDelete,
+    handleMessageDelete,
+  } = useChat();
 
-    // Optional: Add a class to hide specific elements during export if needed
-    element.classList.add('no-scrollbar');
-
-    const activeChat = chats.find(c => c.id === activeChatId);
-    const filename = activeChat ? `${activeChat.title || "Chat"}.pdf` : "chat-export.pdf";
-
-    const opt = {
-      margin: [10, 10],
-      filename: filename,
-      image: { type: 'jpeg', quality: 1.0 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        scrollY: 0,
-        logging: true,
-        letterRendering: true,
-      },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-    };
-
-    html2pdf().set(opt).from(element).save().then(() => {
-      element.classList.remove('no-scrollbar');
-    });
-  }
-
-  const activeChatMessages = useMemo(
-    () => chats.find(({ id }) => id === activeChatId)?.messages ?? [],
-    [chats, activeChatId]
-  );
-
-  // Load user's chats from database when authenticated
+  // Close auth prompt when user logs in
   useEffect(() => {
-    if (isAuthenticated && user) {
-      setLoading(true);
-      loadUserChats(user.id)
-        .then((loadedChats) => {
-          if (loadedChats.length > 0) {
-            setChats(loadedChats);
-            setActiveChatId(loadedChats[0].id);
-          } else {
-            handleNewChatCreate();
-          }
-        })
-        .catch((error) => {
-          console.error('Error loading chats:', error);
-          handleNewChatCreate();
-        })
-        .finally(() => setLoading(false));
-    } else if (!isAuthenticated) {
-      // Guest mode - start with empty chat
-      if (chats.length === 0) {
-        handleNewChatCreate();
-      }
-    }
-  }, [isAuthenticated, user]);
-
-  // Auto-close auth prompt when authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      setShowAuthPrompt(false);
-    }
+    if (isAuthenticated) setShowAuthPrompt(false);
   }, [isAuthenticated]);
 
-  // Save chat to database when messages change (only if authenticated)
-  useEffect(() => {
-    if (!isAuthenticated || !user || !activeChatId || loading) return;
-
-    const activeChat = chats.find((chat) => chat.id === activeChatId);
-    if (!activeChat || activeChat.messages.length === 0) return;
-
-    // Debounce saving to avoid too many requests
-    const timeoutId = setTimeout(async () => {
-      // Check if chat exists in database (has a UUID format)
-      const isExistingChat = activeChat.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
-
-      setSaving(true);
-      console.log('💾 Saving chat...', { chatId: activeChat.id, isExisting: isExistingChat, messageCount: activeChat.messages.length });
-
-      try {
-        if (isExistingChat) {
-          // Update existing chat
-          await updateChat(activeChat.id, activeChat.messages);
-          console.log('✅ Chat updated successfully');
-        } else {
-          // Save new chat
-          const savedChat = await saveChat(user.id, activeChat);
-          console.log('✅ New chat saved successfully', savedChat);
-
-          // Update local state with database ID
-          setChats((prevChats) =>
-            prevChats.map((chat) =>
-              chat.id === activeChat.id ? { ...chat, id: savedChat.id } : chat
-            )
-          );
-          setActiveChatId(savedChat.id);
-        }
-      } catch (error) {
-        console.error('❌ Error saving chat:', error);
-        console.error('Error details:', {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-        });
-        // Don't alert on every error, just log it
-      } finally {
-        setSaving(false);
-      }
-    }, 1000); // Wait 1 second after last change before saving
-
-    return () => clearTimeout(timeoutId);
-  }, [chats, activeChatId, isAuthenticated, user, loading]);
-
-  function handleAssistantChange(newAssistant) {
+  const handleAssistantChange = useCallback((newAssistant) => {
     setAssistant(newAssistant);
-  }
+  }, []);
 
-  function handleChatMessagesUpdate(id, messages) {
-    const title = messages[0]?.content.split(" ").slice(0, 7).join(" ");
-
-    setChats((prevChats) =>
-      prevChats.map((chat) =>
-        chat.id === id
-          ? { ...chat, title: chat.title ?? title, messages }
-          : chat
-      )
-    );
-  }
-
-  function handleNewChatCreate() {
-    const id = `temp-${uuidv4()}`; // Temporary ID until saved to database
-
-    setActiveChatId(id);
-    setChats((prevChats) => [...prevChats, { id, messages: [] }]);
-  }
-
-  function handleActiveChatIdChange(id) {
-    setActiveChatId(id);
-    setChats((prevChats) =>
-      prevChats.filter(({ messages }) => messages.length > 0)
-    );
-  }
-
-  function handleLogout() {
+  const handleLogout = useCallback(() => {
     signOut().then(() => {
-      setChats([]);
-      setActiveChatId(null);
       handleNewChatCreate();
     });
-  }
+  }, [signOut, handleNewChatCreate]);
 
-  async function handleChatTitleUpdate(chatId, newTitle) {
-    // Optimistic update
-    setChats((prevChats) =>
-      prevChats.map((chat) =>
-        chat.id === chatId ? { ...chat, title: newTitle } : chat
-      )
-    );
-
-    if (isAuthenticated) {
-      try {
-        await updateChatTitle(chatId, newTitle);
-      } catch (error) {
-        console.error("Failed to update chat title:", error);
-      }
-    }
-  }
-
-  function handleChatDelete(chatId) {
-    setChats((prevChats) => prevChats.filter((chat) => chat.id !== chatId));
-
-    // If deleted chat was active, switch to another chat
-    if (chatId === activeChatId) {
-      const remainingChats = chats.filter((chat) => chat.id !== chatId);
-      if (remainingChats.length > 0) {
-        setActiveChatId(remainingChats[0].id);
-      } else {
-        handleNewChatCreate();
-      }
-    }
-  }
-
-  function handleMessageDelete(chatId, messageIndex) {
-    // 1. Optimistic update locally
-    const chatToUpdate = chats.find(c => c.id === chatId);
-    if (!chatToUpdate) return;
-
-    const updatedMessages = chatToUpdate.messages.filter((_, index) => index !== messageIndex);
-
-    // Update local state
-    handleChatMessagesUpdate(chatId, updatedMessages);
-
-    // 2. Trigger save to database (will be handled by the useEffect debouncer)
-    // We don't need to do anything explicit here because handleChatMessagesUpdate
-    // updates the 'chats' state, which triggers the useEffect that calls updateChat/saveChat.
-  }
-
-  function handleSaveChatsPrompt() {
+  const handleSaveChatsPrompt = useCallback(() => {
     setShowAuthPrompt(true);
-  }
+  }, []);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-600 dark:text-slate-400">Loading your chats...</p>
-        </div>
-      </div>
-    );
-  }
+  const handleExportPDF = useCallback(() => {
+    const element = document.getElementById("chat-export-container");
+    if (!element) return;
+
+    const activeChat = chats.find((c) => c.id === activeChatId);
+    const filename = activeChat ? `${activeChat.title || "Chat"}.pdf` : "chat-export.pdf";
+
+    html2pdf()
+      .set({
+        margin: [10, 10],
+        filename,
+        image: { type: "jpeg", quality: 1.0 },
+        html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+      })
+      .from(element)
+      .save();
+  }, [chats, activeChatId]);
+
+  if (loading) return <Spinner label="Loading your chats..." />;
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900 transition-colors duration-200">
-      {/* Shared App Header */}
       <AppHeader
         user={user}
         isAuthenticated={isAuthenticated}
@@ -284,7 +119,7 @@ function MainApp() {
         <Sidebar
           chats={chats}
           activeChatId={activeChatId}
-          activeChatMessages={activeChatMessages}
+          activeChatMessages={chats.find(({ id }) => id === activeChatId)?.messages ?? []}
           onActiveChatIdChange={handleActiveChatIdChange}
           onNewChatCreate={handleNewChatCreate}
           onChatDelete={isAuthenticated ? handleChatDelete : null}
@@ -304,7 +139,7 @@ function MainApp() {
             />
           ))}
 
-          {/* Configuration */}
+          {/* Configuration Panel */}
           <div className="fixed bottom-6 right-6 flex flex-col gap-3 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-4">
             <Assistant onAssistantChange={handleAssistantChange} />
             <Theme />
@@ -315,12 +150,10 @@ function MainApp() {
       {/* Auth Modal */}
       {showAuthPrompt && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
             onClick={() => setShowAuthPrompt(false)}
           />
-
           <div className="relative w-full max-w-md z-10">
             <button
               onClick={() => setShowAuthPrompt(false)}
@@ -330,10 +163,10 @@ function MainApp() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
-            {authMode === 'login' ? (
-              <Login onToggleMode={() => setAuthMode('signup')} />
+            {authMode === "login" ? (
+              <Login onToggleMode={() => setAuthMode("signup")} />
             ) : (
-              <Signup onToggleMode={() => setAuthMode('login')} />
+              <Signup onToggleMode={() => setAuthMode("login")} />
             )}
           </div>
         </div>
@@ -342,38 +175,29 @@ function MainApp() {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// AppContent — routing: landing → auth → main app
+// ─────────────────────────────────────────────────────────────────────────────
 function AppContent() {
   const { loading, isAuthenticated } = useAuth();
   const [showLanding, setShowLanding] = useState(true);
   const [landingAuthMode, setLandingAuthMode] = useState(null); // 'login' | 'signup' | null
 
-  // Once user authenticates, skip the landing page
   useEffect(() => {
     if (isAuthenticated) setShowLanding(false);
   }, [isAuthenticated]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-600 dark:text-slate-400">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <Spinner />;
 
-  // Show landing page for unauthenticated users who haven't dismissed it yet
   if (!isAuthenticated && showLanding && !landingAuthMode) {
     return (
       <LandingPage
         onGetStarted={() => setShowLanding(false)}
-        onLogin={() => setLandingAuthMode('login')}
+        onLogin={() => setLandingAuthMode("login")}
       />
     );
   }
 
-  // If user clicked Sign In / Sign Up from the landing page, show a full-page auth form
   if (!isAuthenticated && landingAuthMode) {
     return (
       <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 transition-colors duration-300">
@@ -384,10 +208,10 @@ function AppContent() {
         />
         <div className="flex-1 flex items-center justify-center px-4 py-12">
           <div className="w-full max-w-md">
-            {landingAuthMode === 'login' ? (
-              <Login onToggleMode={() => setLandingAuthMode('signup')} />
+            {landingAuthMode === "login" ? (
+              <Login onToggleMode={() => setLandingAuthMode("signup")} />
             ) : (
-              <Signup onToggleMode={() => setLandingAuthMode('login')} />
+              <Signup onToggleMode={() => setLandingAuthMode("login")} />
             )}
           </div>
         </div>
@@ -399,6 +223,9 @@ function AppContent() {
   return <MainApp />;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// App root
+// ─────────────────────────────────────────────────────────────────────────────
 function App() {
   return (
     <AuthProvider>

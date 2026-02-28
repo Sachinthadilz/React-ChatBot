@@ -38,7 +38,8 @@ export class Assistant {
       const result = await this.#chat.sendMessageStream({ message: content });
 
       for await (const chunk of result) {
-        yield chunk.text;
+        const text = chunk.text;
+        if (text) yield text;
       }
     } catch (error) {
       throw this.#parseError(error);

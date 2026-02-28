@@ -7,7 +7,7 @@ export function Controls({ isDisabled = false, onSend }) {
 
   useEffect(() => {
     if (!isDisabled) {
-      textareaRef.current.focus();
+      textareaRef.current?.focus();
     }
   }, [isDisabled]);
 
