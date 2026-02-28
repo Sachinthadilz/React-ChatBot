@@ -11,16 +11,29 @@ const PROVIDERS = {
     label: "Google AI",
     envKey: "VITE_GOGGLE_AI_API_KEY",
     models: [
-      { value: "googleai:gemini-2.5-flash", label: "Gemini 2.5 Flash" },
-      { value: "googleai:gemini-3-flash-preview", label: "Gemini 3 Flash Preview" },
+      { value: "googleai:gemini-2.5-flash", label: "Gemini 2.5 Flash ⚡" },
+      { value: "googleai:gemini-2.5-flash-lite", label: "Gemini 2.5 Flash-Lite ⚡" },
+      { value: "googleai:gemini-2.5-pro", label: "Gemini 2.5 Pro 🧠" },
+      { value: "googleai:gemini-2.0-flash", label: "Gemini 2.0 Flash" },
+      { value: "googleai:gemini-3-flash-preview", label: "Gemini 3 Flash Preview 🆕" },
     ],
   },
   groqai: {
     label: "Groq",
     envKey: "VITE_GROQ_API_KEY",
     models: [
-      { value: "groqai:llama-3.3-70b-versatile", label: "Llama 3.3 70B Versatile" },
-      { value: "groqai:llama-3.1-8b-instant", label: "Llama 3.1 8B Instant" },
+      // ── Production Models (stable) ───────────────────────────────────────
+      { value: "groqai:llama-3.3-70b-versatile", label: "Llama 3.3 70B" },
+      { value: "groqai:llama-3.1-8b-instant", label: "Llama 3.1 8B ⚡" },
+      { value: "groqai:openai/gpt-oss-120b", label: "GPT-OSS 120B 🆕" },
+      { value: "groqai:openai/gpt-oss-20b", label: "GPT-OSS 20B ⚡" },
+      // ── Production Systems (agentic) ─────────────────────────────────────
+      { value: "groqai:groq/compound", label: "Groq Compound 🤖" },
+      { value: "groqai:groq/compound-mini", label: "Groq Compound Mini 🤖⚡" },
+      // ── Preview Models ───────────────────────────────────────────────────
+      { value: "groqai:meta-llama/llama-4-scout-17b-16e-instruct", label: "Llama 4 Scout 17B (Preview) 🆕" },
+      { value: "groqai:qwen/qwen3-32b", label: "Qwen3 32B (Preview)" },
+      { value: "groqai:moonshotai/kimi-k2-instruct-0905", label: "Kimi K2 (Preview) 🆕" },
     ],
   },
   openai: {
@@ -36,6 +49,7 @@ const PROVIDERS = {
     envKey: "VITE_DEEPSEEK_AI_API_KEY",
     models: [
       { value: "deepseekai:deepseek-chat", label: "DeepSeek-V3" },
+      { value: "deepseekai:deepseek-reasoner", label: "DeepSeek-R1 🧠" },
     ],
   },
   anthropicai: {
@@ -53,6 +67,7 @@ const PROVIDERS = {
     ],
   },
 };
+
 
 const assistantMap = {
   googleai: GoogleAIAssistant,

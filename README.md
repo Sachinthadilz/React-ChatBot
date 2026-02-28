@@ -33,12 +33,19 @@
 ## ✨ Features
 
 ### 🤖 Multiple AI Providers
-- **Google AI** - Gemini 2.5 Flash, Gemini 3 Flash Preview
-- **Groq** - Llama 3.3 70B, Llama 3.1 8B (Free!)
-- **OpenAI** - GPT-4o, GPT-4o mini
-- **DeepSeek AI** - DeepSeek-V3
-- **Anthropic** - Claude 3.5 Haiku
-- **X AI** - Grok 3 Mini
+- **Google AI** — Gemini 3 Flash Preview 🆕, Gemini 2.5 Pro 🧠, Gemini 2.5 Flash ⚡, Gemini 2.5 Flash-Lite ⚡, Gemini 2.0 Flash
+- **Groq** — Llama 4 Maverick 17B 🆕, Llama 4 Scout 17B 🆕, Llama 3.3 70B, Llama 3.1 8B (All Free!)
+- **DeepSeek AI** — DeepSeek-V3, DeepSeek-R1 🧠 (Reasoning)
+- **OpenAI** — GPT-4o, GPT-4o mini
+- **Anthropic** — Claude 3.5 Haiku
+- **X AI** — Grok 3 Mini
+
+### 🌐 Real-Time Web Search
+- **Live data access** - Answers questions about current events, scores, news, prices, and more
+- **Auto-detection** - Automatically triggers a Google search when your question needs fresh data (keywords like "today", "latest", "score", "news", etc.)
+- **Search indicator** - A subtle 🔍 indicator appears while fetching live results
+- **Powered by Serper.dev** - Fast, reliable Google Search API (2,500 free searches/month)
+- **Graceful fallback** - If search fails or times out (8s timeout), the LLM answers from its own knowledge
 
 ### 👥 User Experience
 - 💬 **Guest Mode** - Start chatting immediately without signup
@@ -51,12 +58,13 @@
 ### 💬 Chat Features
 - 📝 Message timestamps
 - 📋 Copy messages to clipboard
-- 💾 Export chat (JSON/Markdown)
+- 💾 Export chat (JSON/Markdown/PDF)
 - 🎨 Syntax highlighting for code blocks
-- ⌨️ Real-time typing indicators
-- 🗑️ Delete chats (for authenticated users)
+- ⌨️ Real-time streaming responses
+- 🗑️ Delete individual messages or entire chats
 - 📂 Multiple chat sessions
 - 🔄 Chat history persistence
+- ✏️ Rename chats
 
 ---
 
@@ -180,6 +188,9 @@ VITE_DEEPSEEK_AI_API_KEY=your-key-here
 VITE_ANTHROPIC_AI_API_KEY=your-key-here
 VITE_X_AI_API_KEY=your-key-here
 
+# Real-Time Web Search (optional - get free key at serper.dev)
+VITE_SERPER_API_KEY=your-serper-api-key
+
 # Supabase (optional - leave empty for guest mode only)
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
@@ -275,14 +286,14 @@ npm run preview
 
 ### Which AI Provider Should I Use?
 
-| Provider | Cost | Speed | Quality | Best For |
-|----------|------|-------|---------|----------|
-| **Groq** | 🆓 Free | ⚡ Fastest | ⭐⭐⭐ Good | Testing, Quick responses |
-| **Google AI** | 🆓 Free | ⚡ Fast | ⭐⭐⭐⭐ Great | General use, Free tier |
-| **OpenAI** | 💰 Paid | 🐢 Medium | ⭐⭐⭐⭐⭐ Best | Production, Complex tasks |
-| **Anthropic** | 💰 Paid | 🐢 Medium | ⭐⭐⭐⭐⭐ Best | Long conversations |
-| **DeepSeek** | 💰 Paid | ⚡ Fast | ⭐⭐⭐⭐ Great | Coding tasks |
-| **X AI** | 💰 Paid | 🐢 Medium | ⭐⭐⭐⭐ Great | General use |
+| Provider | Cost | Speed | Models | Best For |
+|----------|------|-------|--------|----------|
+| **Groq** | 🆓 Free | ⚡ Fastest | Llama 4 Maverick/Scout, Llama 3.3 70B, GPT-OSS 120B, Groq Compound | Testing, Speed-critical apps |
+| **Google AI** | 🆓 Free | ⚡ Fast | Gemini 3 Flash, 2.5 Pro, 2.5 Flash, 2.5 Flash-Lite, 2.0 Flash | General use, Multimodal |
+| **DeepSeek** | 💰 Cheap | ⚡ Fast | DeepSeek-V3, DeepSeek-R1 🧠 | Coding, Reasoning, Math |
+| **OpenAI** | 💰 Paid | 🐢 Medium | GPT-4o, GPT-4o mini | Production, Complex tasks |
+| **Anthropic** | 💰 Paid | 🐢 Medium | Claude 3.5 Haiku | Long conversations |
+| **X AI** | 💰 Paid | 🐢 Medium | Grok 3 Mini | General use |
 
 **Recommendation for beginners:** Start with **Groq** (free) or **Google AI** (free).
 
@@ -333,19 +344,25 @@ react-ai-chatbot/
 │   ├── components/        # React components
 │   │   ├── App.jsx        # Main app component
 │   │   ├── Auth/          # Login/Signup
-│   │   ├── Chat/          # Chat interface
-│   │   ├── Sidebar/       # Chat history
+│   │   ├── Chat/          # Chat interface & streaming
+│   │   ├── Sidebar/       # Chat history sidebar
 │   │   ├── Assistant/     # AI provider selector
+│   │   ├── Layout/        # Shared Header & Footer
+│   │   ├── Modals/        # Confirmation modals
+│   │   ├── Spinner/       # Reusable loading spinner
 │   │   ├── Theme/         # Dark mode toggle
 │   │   └── ...
 │   ├── contexts/          # React contexts
 │   │   └── AuthContext.jsx # Authentication state
+│   ├── hooks/             # Custom React hooks
+│   │   └── useChat.js      # Chat state & persistence logic
 │   ├── services/          # Business logic
-│   │   └── chatService.js  # Database operations
+│   │   └── chatService.js  # Supabase database operations
+│   ├── utils/             # Utilities
+│   │   ├── exportChat.js   # JSON/Markdown/PDF export
+│   │   └── webSearch.js    # Real-time Serper.dev search
 │   ├── lib/               # Libraries
 │   │   └── supabaseClient.js # Supabase client
-│   ├── utils/             # Utilities
-│   │   └── exportChat.js   # Export functionality
 │   ├── index.css          # Global styles
 │   └── main.jsx           # Entry point
 ├── supabase/              # Database
@@ -358,7 +375,7 @@ react-ai-chatbot/
 ├── .gitignore             # Git ignore rules
 ├── package.json           # Dependencies
 ├── tailwind.config.js     # TailwindCSS config (removed in v4)
-├── vite.config.js         # Vite configuration
+├── vite.config.js         # Vite configuration + search proxy
 └── README.md              # This file
 ```
 
@@ -390,15 +407,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Supabase](https://supabase.com/) - Backend & Auth
 - AI Providers: Google, Groq, OpenAI, Anthropic, DeepSeek, X AI
 
----
 
-## 📞 Support
-
-- 📧 **Email**: your-email@example.com
-- 🐛 **Issues**: [GitHub Issues](https://github.com/YOUR_USERNAME/react-ai-chatbot/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/YOUR_USERNAME/react-ai-chatbot/discussions)
-
----
 
 ## 🗺️ Roadmap
 
